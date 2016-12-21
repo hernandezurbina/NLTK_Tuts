@@ -8,6 +8,29 @@ from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
 
+from nltk.classify import ClassifierI
+from statistics import mode
+
+class VoteClassifier(ClassifierI):
+	def __init__(self, *classifiers):
+		self._classifiers = classifiers
+
+	def classify(self, features):
+		votes = []
+		for c in self._classifiers:
+			v = c.classify(features)
+			votes.append(v)
+		return mode(votes)
+
+	def confidence(self, features):
+		votes = []
+		for c in self._classifiers:
+			v = c.classify(features)
+			votes.append(v)
+		choiceVotes = votes.count(mode(votes))
+		conf = choiceVotes / len(votes)
+		return conf
+
 documents = [(list(movie_reviews.words(fileid)), category)
 			for category in movie_reviews.categories()
 			for fileid in movie_reviews.fileids(category)]
@@ -36,7 +59,7 @@ testingSet = featureSets[1900:]
 
 classifier = nltk.NaiveBayesClassifier.train(trainingSet)
 print("NB (original) acc: ", nltk.classify.accuracy(classifier, testingSet) * 100)
-classifier.show_most_informative_features(15)
+# classifier.show_most_informative_features(15)
 
 # saveClassifier = open("NB.pickle", "wb")
 # pickle.dump(classifier, saveClassifier)
@@ -69,10 +92,10 @@ sgdClassifier = SklearnClassifier(SGDClassifier())
 sgdClassifier.train(trainingSet)
 print("SGD acc: ", nltk.classify.accuracy(sgdClassifier, testingSet) * 100)
 
-print()
-svcClassifier = SklearnClassifier(SVC())
-svcClassifier.train(trainingSet)
-print("SVC acc: ", nltk.classify.accuracy(svcClassifier, testingSet) * 100)
+# print()
+# svcClassifier = SklearnClassifier(SVC())
+# svcClassifier.train(trainingSet)
+# print("SVC acc: ", nltk.classify.accuracy(svcClassifier, testingSet) * 100)
 
 print()
 linSvcClassifier = SklearnClassifier(LinearSVC())
@@ -83,5 +106,12 @@ print()
 nuSvcClassifier = SklearnClassifier(NuSVC())
 nuSvcClassifier.train(trainingSet)
 print("Nu SVC acc: ", nltk.classify.accuracy(nuSvcClassifier, testingSet) * 100)
+
+votedClassifier = VoteClassifier(classifier, mnbClassifier, bernClassifier,
+	logRegClassifier, sgdClassifier, linSvcClassifier, nuSvcClassifier)
+
+print("Voted classifier acc: ", nltk.classify.accuracy(votedClassifier, testingSet) * 100)
+print("Classification: ", votedClassifier.classify(testingSet[0][0]), 
+	" Confidence: ", votedClassifier.confidence(testingSet[0][0]))
 
 print()
