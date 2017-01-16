@@ -49,7 +49,7 @@ with open("featureSets.pickle", "rb") as f:
 	featureSets = pickle.load(f)
 
 random.shuffle(featureSets)
-print(len(featureSets))
+#print(len(featureSets))
 
 testingSet = featureSets[10000:]
 trainingSet = featureSets[:10000]
